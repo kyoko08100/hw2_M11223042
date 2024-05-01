@@ -16,7 +16,7 @@ from torch.utils.data import Dataset as BaseDataset
 
 class Dataset(BaseDataset):
 
-    #所有類別，本實驗只有氣管一類
+    # 所有類別，本實驗只有氣管一類
     CLASSES = ['trachea']
 
     def __init__(
@@ -31,10 +31,10 @@ class Dataset(BaseDataset):
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.ids]
         self.masks_fps = [os.path.join(masks_dir, image_id) for image_id in self.ids]
 
-        #STR TO CLASS
+        # STR TO CLASS
         self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
         
-        #強化&前處理
+        # 強化&前處理
         self.augmentation = augmentation
         self.preprocessing = preprocessing
 
@@ -61,8 +61,6 @@ class Dataset(BaseDataset):
             sample = self.augmentation(image=image, mask=mask)
             image, mask = sample['image'], sample['mask']
         
-
-        
         # 圖像前處理
         if self.preprocessing:
             sample = self.preprocessing(image=image, mask=mask)
@@ -74,11 +72,11 @@ class Dataset(BaseDataset):
         return len(self.ids)
 
 # ---------------------------------------------------------------    
-#平均誤差公分
+# 平均誤差公分
 
-#換成公分
-#y = 真實值
-#g = 預測值
+# 換成公分
+# y = 真實值
+# g = 預測值
 def average_error_in_centimeters(mask):
     pixel_size_cm = 1 / 72  # 每72像素一公分
 
@@ -96,7 +94,7 @@ def average_error_in_centimeters(mask):
     answer = [last_zero_index[0] * pixel_size_cm, last_zero_index[1] * pixel_size_cm, mask[last_zero_index[0], last_zero_index[1]]]
     return answer
     
-#計算每張圖片的公分誤差
+# 計算每張圖片的公分誤差
 def calculate_centimeter_error(gt_mask,pr_mask):
     # 取出 Y
     gt_y = gt_mask[1]
@@ -113,7 +111,7 @@ def calculate_centimeter_error(gt_mask,pr_mask):
     print("distance:", distance)
     return distance
     
-#沒有換公分，是pixel    
+# 沒有換公分，是pixel    
 def average_error_in_pixel(mask):
     # 建立一個與mask相同的
     mask_pixel = np.empty((mask.shape[0], mask.shape[1], 3))
@@ -129,24 +127,23 @@ def average_error_in_pixel(mask):
 # ---------------------------------------------------------------
 
 def get_validation_augmentation():
-    #調整至256x256
+    # 調整至256x256
     test_transform = [
         albu.Resize(256,256)
     ]
     return albu.Compose(test_transform)
 
-#2 0 1表示將原本的height、width、channels變為chw
+# 2 0 1表示將原本的height、width、channels變為chw
 def to_tensor(x, **kwargs):
     return x.transpose(2, 0, 1).astype('float32')
 
-
 def get_preprocessing(preprocessing_fn):
     
-    #前處理
-    #preprocessing_fn (callbale): 規範後的函數
+    # 前處理
+    # preprocessing_fn (callbale): 規範後的函數
 
     _transform = [
-        #將圖缩放到 [0, 1] 内
+        # 將圖缩放到 [0, 1] 内
         albu.Lambda(image=preprocessing_fn),
         albu.Lambda(image=to_tensor, mask=to_tensor),
     ]
@@ -180,13 +177,13 @@ if __name__ == '__main__':
     ENCODER_WEIGHTS = 'imagenet'
     CLASSES = ['trachea']
     ACTIVATION = 'sigmoid' # could be None for logits or 'softmax2d' for multiclass segmentation
-    DEVICE = 'cuda' #device
+    DEVICE = 'cuda' # device
 
     preprocessing_fn = smp.encoders.get_preprocessing_fn(ENCODER, ENCODER_WEIGHTS)
     # ---------------------------------------------------------------
 
-    # 加载最佳模型
-    best_model = torch.load('./調整/best.pth')
+    # 載入訓練最佳模型
+    best_model = torch.load('./best.pth')
 
     # 載入測試集
     test_dataset = Dataset(
@@ -216,7 +213,7 @@ if __name__ == '__main__':
         image, gt_mask, x,y  = test_dataset[i]
         gt_mask = gt_mask.squeeze()
         
-        #公式2，3
+        # 公式2，3
 #         gt_first_white_pixel, gt_pixel_answer = average_error_in_pixel(gt_mask)
   
         x_tensor = torch.from_numpy(image).to(DEVICE).unsqueeze(0)
@@ -226,29 +223,28 @@ if __name__ == '__main__':
         gt_mask = cv2.resize(gt_mask, (x, y))
         pr_mask = cv2.resize(pr_mask, (x, y))
         
-        #公式1 gt 換成公分
+        # 公式1 gt 換成公分
         gt_answer = average_error_in_centimeters(gt_mask)
         
-        #公式1 pr 換成公分
+        # 公式1 pr 換成公分
         pr_answer = average_error_in_centimeters(pr_mask)
         
-        #公式2，3
+        # 公式2，3
 #         pr_first_white_pixel, pr_pixel_answer = average_error_in_pixel(pr_mask)
         
-        #總誤差公分 Yi−Gi
+        # 總誤差公分 Yi−Gi
         total_centimeter += calculate_centimeter_error(gt_answer, pr_answer)
         
         centimeter = calculate_centimeter_error(gt_answer, pr_answer)
         print("誤差: ",centimeter)
         
-        #誤差0.5
+        # 誤差0.5
         if centimeter<=0.5:
             half+=1
-        #誤差1.0
+        # 誤差1.0
         if centimeter<=1:
             one+=1
 
-        #
         print(half)
         print(one)
 
@@ -258,7 +254,7 @@ if __name__ == '__main__':
             predicted_mask=pr_mask
         )
     
-    #平均誤差公分  1/K
+    # 平均誤差公分  1/K
     k_p = 1/k
     Average_error_in_centimeters = k_p*total_centimeter
     print("平均誤差公分" + str(Average_error_in_centimeters))

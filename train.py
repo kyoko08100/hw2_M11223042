@@ -15,7 +15,7 @@ import ssl
 
 class Dataset(BaseDataset):
    
-   #所有類別，本實驗只有氣管一類
+   # 所有類別，本實驗只有氣管一類
     CLASSES = ['trachea', ]
 
     def __init__(
@@ -30,10 +30,10 @@ class Dataset(BaseDataset):
         self.images_fps = [os.path.join(images_dir, image_id) for image_id in self.ids]
         self.masks_fps = [os.path.join(masks_dir, image_id) for image_id in self.ids]
 
-        #STR TO CLASS 
+        # STR TO CLASS 
         self.class_values = [self.CLASSES.index(cls.lower()) for cls in classes]
 
-        #強化&前處理
+        # 強化&前處理
         self.augmentation = augmentation
         self.preprocessing = preprocessing
 
@@ -74,8 +74,8 @@ class Dataset(BaseDataset):
 
 def get_training_augmentation():
     train_transform = [
-        #由於X光圖通常有高對比及較少的躁點，且診斷時需要保留原本的樣貌
-        #只使用銳化及平移10%
+        # 由於X光圖通常有高對比及較少的躁點，且診斷時需要保留原本的樣貌
+        # 只使用銳化及平移10%
         albu.OneOf(
             [
                 albu.Sharpen(p=1),
@@ -90,7 +90,7 @@ def get_training_augmentation():
 
 
 def get_validation_augmentation():
-    #調整至256x256
+    # 調整至256x256
     test_transform = [
         albu.Resize(256,256, always_apply=True)
     ]
@@ -98,17 +98,17 @@ def get_validation_augmentation():
 
 
 
-#2 0 1表示將原本的height、width、channels變為chw
+# 2 0 1表示將原本的height、width、channels變為chw
 def to_tensor(x, **kwargs):
     return x.transpose(2, 0, 1).astype('float32')
 
 
 def get_preprocessing(preprocessing_fn):
-    #前處理
-    #preprocessing_fn (callbale): 規範後的函數
+    # 前處理
+    # preprocessing_fn (callbale): 規範後的函數
 
     _transform = [
-        #將圖缩放到 [0, 1] 内
+        # 將圖缩放到 [0, 1] 内
         albu.Lambda(image=preprocessing_fn),
         albu.Lambda(image=to_tensor, mask=to_tensor),
     ]
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     ENCODER_WEIGHTS = 'imagenet'
     CLASSES = ['trachea']
     ACTIVATION = 'sigmoid' # could be None for logits or 'softmax2d' for multiclass segmentation
-    DEVICE = 'cuda' #device
+    DEVICE = 'cuda' # device
 
     # 用已有MODEL建立分割模型
 
@@ -164,8 +164,8 @@ if __name__ == '__main__':
 
     # 載入訓練集
     train_dataset = Dataset(
-        x_train_dir, #訓練集路徑
-        y_train_dir, #訓練集MASK路徑
+        x_train_dir, # 訓練集路徑
+        y_train_dir, # 訓練集MASK路徑
         augmentation=get_training_augmentation(),
         preprocessing=get_preprocessing(preprocessing_fn),
         classes=CLASSES,
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     # num_workers：用於加載數據的線程數量
     # drop_last：如果數據樣本數不能被 batch_size 整除，TRUE丟
 
-    #Unet 設定  Unet++ 設定 
+    # Unet 設定  Unet++ 設定 
     train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=0)
     valid_loader = DataLoader(valid_dataset, batch_size=4, shuffle=False, num_workers=0)
     
@@ -236,7 +236,7 @@ if __name__ == '__main__':
         # 每次迭代保存訓練最好的模型
         if max_score < valid_logs['iou_score']:
             max_score = valid_logs['iou_score']
-            torch.save(model, './best_model.pth')
+            torch.save(model, './best.pth')
             print('Model saved!')
             counter = 0
         else:
